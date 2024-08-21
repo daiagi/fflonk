@@ -7,11 +7,31 @@ use ark_std::vec::Vec;
 
 use crate::pcs::Commitment;
 use crate::utils::ec::small_multiexp_affine;
+use rustler::{Encoder, Decoder, Env, Term, NifResult};
+
 
 /// KZG commitment to G1 represented in affine coordinates.
 #[derive(Clone, Debug, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct KzgCommitment<E: Pairing>(pub E::G1Affine);
 
+
+// Implement `Encoder` for `KzgCommitment`
+impl<E: Pairing> Encoder for KzgCommitment<E> {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        let mut bytes = Vec::new();
+        self.0.serialize_compressed(&mut bytes).unwrap();
+        bytes.encode(env)
+    }
+}
+
+// Implement `Decoder` for `KzgCommitment`
+impl<'a, E: Pairing> Decoder<'a> for KzgCommitment<E> {
+    fn decode(term: Term<'a>) -> NifResult<Self> {
+        let bytes: Vec<u8> = term.decode()?;
+        let affine = E::G1Affine::deserialize_compressed(&*bytes).unwrap();
+        Ok(KzgCommitment(affine))
+    }
+}
 
 impl <E: Pairing> Commitment<E::ScalarField> for KzgCommitment<E> {
     fn mul(&self, by: E::ScalarField) -> KzgCommitment<E> {
