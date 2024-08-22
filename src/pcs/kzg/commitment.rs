@@ -64,3 +64,4 @@ impl<E: Pairing> Sum<Self> for KzgCommitment<E> {
         KzgCommitment(iter.map(|c| c.0.into_group()).sum::<E::G1>().into_affine())
     }
 }
+
